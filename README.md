@@ -1,70 +1,129 @@
-# Getting Started with Create React App
+# Репозиторий создан в ходе изучения пакета react-query
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Рабочая ссылка на созданное приложение, но запрос не происходит так как останавливается CORSом
 
-## Available Scripts
+```
+https://vitaliikalinbet.github.io/react_query_tutorial/
+```
 
-In the project directory, you can run:
+Вот оригинальный репозиторий автора:
 
-### `yarn start`
+```
+https://github.com/iamshaunjp/react-query-tutorial/
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Вот видео:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```
+https://www.youtube.com/watch?v=x1rQ61otgtU&list=PL4cUxeGkcC9jpi7Ptjl5b50p9gLjOFani&index=1&ab_channel=TheNetNinja
+```
 
-### `yarn test`
+НО ЕСТЬ РЯД ОТЛИЧИЙ, о них ниже.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Чтобы в приложении работал react-query, его подключение должно быть таким:
 
-### `yarn build`
+```js
+import React, { useState } from "react";
+import Navbar from "./components/Navbar";
+import Planets from "./components/Planets";
+import People from "./components/People";
+import { QueryClient, QueryClientProvider } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+const queryClient = new QueryClient();
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+function App() {
+  const [page, setPage] = useState("planets");
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  return (
+    <>
+      <QueryClientProvider client={queryClient}>
+        <div className="App">
+          <h1>Star wars info</h1>
+          <Navbar setPage={setPage} />
+          <div className="content">
+            {page === "planets" ? <Planets /> : <People />}
+          </div>
+        </div>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </>
+  );
+}
 
-### `yarn eject`
+export default App;
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Переданный массив параметров в useQuery не работает так как показано в видео, доступ возможен только обратившись вот так:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+const fetchPlanets = async (key, page) => {
+  const res = await fetch(
+    `http://swapi.dev/api/planets/?page=${key.queryKey[1]}`
+  );
+  return res.json();
+};
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+const Planets = () => {
+  const [page, setPage] = useState(1);
+  const { data, status } = useQuery(["planets", page], fetchPlanets);
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+  return <div>//...</div>;
+};
+```
 
-## Learn More
+## Показанный usePaginatedQuery уже как я понял не используется, вместо это используем обычный useQuery вот так:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```js
+const fetchPlanets = async (key, page) => {
+  console.log("key :>> ", key);
+  console.log("page :>> ", page);
+  const res = await fetch(
+    `http://swapi.dev/api/planets/?page=${key.queryKey[1]}`
+  );
+  return res.json();
+};
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+const Planets = () => {
+  const [page, setPage] = useState(1);
 
-### Code Splitting
+  const { data, status } = useQuery(["planets", page], fetchPlanets, {
+    keepPreviousData: true,
+  });
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+  return (
+    <div>
+      <h2>Planets</h2>
 
-### Analyzing the Bundle Size
+      {status === "error" ? <div>Error fetching data</div> : null}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+      {status === "loading" ? <div>Loading data...</div> : null}
 
-### Making a Progressive Web App
+      {status === "success" && (
+        <section>
+          <button
+            onClick={() => setPage((old) => Math.max(old - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous Page
+          </button>
+          <span>{page}</span>
+          <button
+            onClick={() => setPage((old) => old + 1)}
+            disabled={!data || !data.next}
+          >
+            Next page
+          </button>
+          <div>
+            {data.results.map((planet) => (
+              <Planet key={planet.name} planet={planet} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+export default Planets;
+```

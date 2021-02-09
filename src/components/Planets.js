@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, usePaginatedQuery } from "react-query";
+import { useQuery } from "react-query";
 import Planet from "./Planet";
 
 // const fetchPlanets = async (key, greeting, page) => {
